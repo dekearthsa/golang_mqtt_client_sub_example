@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -20,8 +23,13 @@ func sub(client mqtt.Client) {
 	// fmt.Printf("Subscribed to topic: %s", topic)
 }
 
+// var knt int
+
 func main() {
 	fmt.Println("Connecting...")
+	// knt = 0
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	var broker = "broker.mqttdashboard.com"
 	var port = 1883
 	// create a new MQTT client
@@ -34,24 +42,29 @@ func main() {
 	opts.SetMaxReconnectInterval(1 * time.Minute)
 	client := mqtt.NewClient(opts)
 
-	// subscribe to a topic
-
-	for {
-		if !client.IsConnected() {
-			if token := client.Connect(); token.Wait() && token.Error() != nil {
-				fmt.Println(token.Error())
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			fmt.Println("Connected to MQTT broker")
-		}
-
-		// text := fmt.Sprintf("Hello, MQTT! %v", time.Now())
-		// token := client.Publish("my/topic", 0, false, text)
-		sub(client)
-		// token.Wait()
-		// fmt.Println("Published message:", text)
-
-		// time.Sleep(5 * time.Second)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
 	}
+	fmt.Println("Connected to MQTT broker")
+
+	sub(client)
+	<-c
+	// for {
+	// if !client.IsConnected() {
+	// 	if token := client.Connect(); token.Wait() && token.Error() != nil {
+	// 		fmt.Println(token.Error())
+	// 		time.Sleep(1 * time.Second)
+	// 		continue
+	// 	}
+	// 	fmt.Println("Connected to MQTT broker")
+	// }
+
+	// //  text := fmt.Sprintf("Hello, MQTT! %v", time.Now())
+	// // token := client.Publish("my/topic", 0, false, text)
+	// sub(client)
+	// //  token.Wait()
+	// //  fmt.Println("Published message:", text)
+
+	// // time.Sleep(5 * time.Second)
+	// }
 }
